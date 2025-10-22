@@ -7,6 +7,7 @@ use App\Http\Requests\Auth\RegisterRequest;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Models\Utilisateur;
 use App\Models\Personne;
+use App\Services\AuthentikService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -18,6 +19,13 @@ use Exception;
 
 class AuthController extends Controller
 {
+    protected AuthentikService $authentikService;
+
+    public function __construct(AuthentikService $authentikService)
+    {
+        $this->authentikService = $authentikService;
+    }
+
     /**
      * Rediriger vers Authentik pour l'authentification OAuth
      * 
@@ -137,7 +145,7 @@ class AuthController extends Controller
     }
 
     /**
-     * Inscription locale (sans OAuth)
+     * Inscription (avec création dans Authentik)
      * 
      * @param RegisterRequest $request
      * @return JsonResponse
@@ -147,14 +155,40 @@ class AuthController extends Controller
         DB::beginTransaction();
 
         try {
-            // Créer l'utilisateur
-            $utilisateur = Utilisateur::create([
+            // 1. Vérifier si l'utilisateur existe déjà dans Authentik
+            if ($this->authentikService->userExists($request->email)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Cet email est déjà utilisé.',
+                    'errors' => [
+                        'email' => ['Cette adresse email est déjà utilisée.']
+                    ]
+                ], 422);
+            }
+
+            // 2. Créer l'utilisateur dans Authentik
+            $authentikUser = $this->authentikService->createUser([
                 'email' => $request->email,
-                'password' => Hash::make($request->password),
+                'password' => $request->password,
+                'nom' => $request->nom,
+                'prenom' => $request->prenom,
+                'contact' => $request->contact,
+                'adresse' => $request->adresse,
                 'role' => $request->role ?? 'candidat',
             ]);
 
-            // Créer la personne associée
+            if (!$authentikUser) {
+                throw new Exception('Impossible de créer l\'utilisateur dans Authentik');
+            }
+
+            // 3. Créer l'utilisateur dans notre DB (sans stocker le mot de passe)
+            $utilisateur = Utilisateur::create([
+                'email' => $request->email,
+                'password' => Hash::make(Str::random(32)), // Mot de passe aléatoire (non utilisé)
+                'role' => $request->role ?? 'candidat',
+            ]);
+
+            // 4. Créer la personne associée
             Personne::create([
                 'utilisateur_id' => $utilisateur->id,
                 'nom' => $request->nom,
@@ -166,17 +200,38 @@ class AuthController extends Controller
 
             DB::commit();
 
-            Log::info('Nouvelle inscription réussie', [
+            Log::info('Nouvelle inscription réussie (Authentik + DB)', [
                 'user_id' => $utilisateur->id,
                 'email' => $utilisateur->email,
-                'role' => $utilisateur->role
+                'role' => $utilisateur->role,
+                'authentik_pk' => $authentikUser['pk'] ?? null
             ]);
 
+            // 5. Authentifier automatiquement l'utilisateur via Authentik
+            $authResult = $this->authentikService->authenticateUser($request->email, $request->password);
+
+            if ($authResult) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Inscription réussie. Bienvenue !',
+                    'user' => [
+                        'id' => $utilisateur->id,
+                        'email' => $utilisateur->email,
+                        'role' => $utilisateur->role,
+                    ],
+                    'access_token' => $authResult['tokens']['access_token'],
+                    'refresh_token' => $authResult['tokens']['refresh_token'] ?? null,
+                    'token_type' => 'Bearer',
+                    'expires_in' => $authResult['tokens']['expires_in'] ?? 3600,
+                ], 201);
+            }
+
+            // Si l'authentification automatique échoue, retourner quand même un succès
             $token = $this->generateAccessToken($utilisateur);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Inscription réussie. Bienvenue !',
+                'message' => 'Inscription réussie. Veuillez vous connecter.',
                 'user' => [
                     'id' => $utilisateur->id,
                     'email' => $utilisateur->email,
@@ -204,7 +259,7 @@ class AuthController extends Controller
     }
 
     /**
-     * Connexion locale (sans OAuth)
+     * Connexion (authentification via Authentik)
      * 
      * @param LoginRequest $request
      * @return JsonResponse
@@ -212,10 +267,11 @@ class AuthController extends Controller
     public function login(LoginRequest $request): JsonResponse
     {
         try {
-            $utilisateur = Utilisateur::where('email', $request->email)->first();
+            // 1. Authentifier via Authentik
+            $authResult = $this->authentikService->authenticateUser($request->email, $request->password);
 
-            if (!$utilisateur || !Hash::check($request->password, $utilisateur->password)) {
-                Log::warning('Tentative de connexion échouée', [
+            if (!$authResult) {
+                Log::warning('Tentative de connexion échouée (Authentik)', [
                     'email' => $request->email,
                     'ip' => $request->ip()
                 ]);
@@ -226,13 +282,45 @@ class AuthController extends Controller
                 ], 401);
             }
 
-            Log::info('Connexion réussie', [
+            // 2. Récupérer ou créer l'utilisateur dans notre DB
+            $utilisateur = Utilisateur::where('email', $request->email)->first();
+
+            if (!$utilisateur) {
+                // Si l'utilisateur existe dans Authentik mais pas dans notre DB, le créer
+                DB::beginTransaction();
+                try {
+                    $utilisateur = Utilisateur::create([
+                        'email' => $request->email,
+                        'password' => Hash::make(Str::random(32)),
+                        'role' => $authResult['user']['attributes']['role'][0] ?? 'candidat',
+                    ]);
+
+                    Personne::create([
+                        'utilisateur_id' => $utilisateur->id,
+                        'nom' => $authResult['user']['family_name'] ?? '',
+                        'prenom' => $authResult['user']['given_name'] ?? $authResult['user']['name'] ?? '',
+                        'email' => $request->email,
+                        'contact' => $authResult['user']['attributes']['contact'][0] ?? '',
+                        'adresse' => $authResult['user']['attributes']['adresse'][0] ?? '',
+                    ]);
+
+                    DB::commit();
+
+                    Log::info('Utilisateur synchronisé depuis Authentik', [
+                        'user_id' => $utilisateur->id,
+                        'email' => $request->email
+                    ]);
+                } catch (Exception $e) {
+                    DB::rollBack();
+                    throw $e;
+                }
+            }
+
+            Log::info('Connexion réussie via Authentik', [
                 'user_id' => $utilisateur->id,
                 'email' => $utilisateur->email,
                 'ip' => $request->ip()
             ]);
-
-            $token = $this->generateAccessToken($utilisateur);
 
             return response()->json([
                 'success' => true,
@@ -242,8 +330,10 @@ class AuthController extends Controller
                     'email' => $utilisateur->email,
                     'role' => $utilisateur->role,
                 ],
-                'access_token' => $token,
+                'access_token' => $authResult['tokens']['access_token'],
+                'refresh_token' => $authResult['tokens']['refresh_token'] ?? null,
                 'token_type' => 'Bearer',
+                'expires_in' => $authResult['tokens']['expires_in'] ?? 3600,
             ]);
 
         } catch (Exception $e) {
