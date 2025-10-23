@@ -242,6 +242,114 @@ class AuthController extends Controller
     }
 
     /**
+     * 🚀 NOUVELLE MÉTHODE : Connexion directe avec contournement Password Grant
+     * 
+     * @param LoginRequest $request
+     * @return JsonResponse
+     */
+    public function loginDirect(LoginRequest $request): JsonResponse
+    {
+        try {
+            Log::info('Tentative de connexion directe', [
+                'email' => $request->email,
+                'ip' => $request->ip()
+            ]);
+
+            // Utiliser la nouvelle méthode de contournement
+            $result = $this->authentikService->authenticateUserDirect(
+                $request->email,
+                $request->password
+            );
+
+            if ($result['success']) {
+                // Synchroniser avec la base locale
+                $user = $this->synchronizeUserFromAuthentik($result['user']);
+
+                Log::info('Connexion directe réussie', [
+                    'user_id' => $user->id,
+                    'email' => $user->email,
+                    'method' => 'direct_auth'
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Connexion réussie !',
+                    'user' => [
+                        'id' => $user->id,
+                        'email' => $user->email,
+                        'role' => $user->role,
+                    ],
+                    'access_token' => $result['tokens']['access_token'],
+                    'refresh_token' => $result['tokens']['refresh_token'],
+                    'token_type' => $result['tokens']['token_type'],
+                    'expires_in' => $result['tokens']['expires_in'],
+                    'method' => 'direct_auth'
+                ]);
+            }
+
+            Log::warning('Connexion directe échouée', [
+                'email' => $request->email,
+                'reason' => $result['message']
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => $result['message']
+            ], 401);
+
+        } catch (Exception $e) {
+            Log::error('Erreur lors de la connexion directe', [
+                'email' => $request->email,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la connexion.',
+                'error' => config('app.debug') ? $e->getMessage() : 'Une erreur est survenue.'
+            ], 500);
+        }
+    }
+
+    /**
+     * Synchroniser un utilisateur Authentik avec la base locale
+     * 
+     * @param array $authentikUser
+     * @return Utilisateur
+     */
+    private function synchronizeUserFromAuthentik(array $authentikUser): Utilisateur
+    {
+        $user = Utilisateur::where('email', $authentikUser['email'])->first();
+
+        if (!$user) {
+            // Créer l'utilisateur s'il n'existe pas
+            $user = Utilisateur::create([
+                'email' => $authentikUser['email'],
+                'password' => Hash::make(Str::random(32)), // Mot de passe aléatoire
+                'role' => $authentikUser['attributes']['role'][0] ?? 'candidat',
+            ]);
+
+            // Créer la personne associée
+            Personne::create([
+                'utilisateur_id' => $user->id,
+                'nom' => $authentikUser['attributes']['nom'][0] ?? 'Non renseigné',
+                'prenom' => $authentikUser['attributes']['prenom'][0] ?? $authentikUser['name'],
+                'email' => $authentikUser['email'],
+                'contact' => $authentikUser['attributes']['contact'][0] ?? '',
+                'adresse' => $authentikUser['attributes']['adresse'][0] ?? '',
+            ]);
+
+            Log::info('Utilisateur créé via synchronisation Authentik', [
+                'user_id' => $user->id,
+                'email' => $user->email
+            ]);
+        }
+
+        return $user;
+    }
+
+    /**
      * Obtenir l'URL d'authentification Authentik (pour Authorization Code Flow)
      * 
      * @return JsonResponse

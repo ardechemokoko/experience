@@ -29,6 +29,10 @@ Route::prefix('auth')->group(function () {
     Route::post('/register', [AuthController::class, 'register'])
         ->name('auth.register');
 
+    // 🚀 NOUVELLE ROUTE : Connexion directe avec contournement Password Grant
+    Route::post('/login-direct', [AuthController::class, 'loginDirect'])
+        ->name('auth.login.direct');
+
     // Rafraîchir le token d'accès (sans authentification car le token est expiré)
     Route::post('/refresh', [AuthController::class, 'refreshToken'])
         ->name('auth.refresh');

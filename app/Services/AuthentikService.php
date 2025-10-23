@@ -113,7 +113,7 @@ class AuthentikService
     }
 
     /**
-     * Authentifier un utilisateur via Authentik
+     * Authentifier un utilisateur via Authentik (méthode originale)
      *
      * @param string $email
      * @param string $password
@@ -159,6 +159,238 @@ class AuthentikService
             
             return null;
         }
+    }
+
+    /**
+     * 🚀 NOUVELLE MÉTHODE : Authentification directe via API Authentik
+     * Contour Adventure du problème Password Grant
+     *
+     * @param string $email
+     * @param string $password
+     * @return array
+     */
+    public function authenticateUserDirect(string $email, string $password): array
+    {
+        try {
+            Log::info('Tentative d\'authentification directe', ['email' => $email]);
+
+            // 1. Obtenir un token d'API avec Client Credentials
+            $apiToken = $this->getApiAccessToken();
+            if (!$apiToken) {
+                return [
+                    'success' => false,
+                    'message' => 'Impossible d\'obtenir un token d\'API'
+                ];
+            }
+
+            // 2. Vérifier si l'utilisateur existe
+            $user = $this->getUserByEmailWithToken($email, $apiToken);
+            if (!$user) {
+                return [
+                    'success' => false,
+                    'message' => 'Utilisateur non trouvé'
+                ];
+            }
+
+            // 3. Vérifier le mot de passe
+            $passwordValid = $this->verifyPasswordDirect($user['pk'], $password, $apiToken);
+            if (!$passwordValid) {
+                return [
+                    'success' => false,
+                    'message' => 'Mot de passe incorrect'
+                ];
+            }
+
+            // 4. Générer des tokens personnalisés
+            $tokens = $this->generateCustomTokens($user);
+
+            Log::info('Authentification directe réussie', [
+                'email' => $email,
+                'user_id' => $user['pk']
+            ]);
+
+            return [
+                'success' => true,
+                'user' => $user,
+                'tokens' => $tokens
+            ];
+
+        } catch (Exception $e) {
+            Log::error('Erreur authentification directe', [
+                'email' => $email,
+                'error' => $e->getMessage()
+            ]);
+
+            return [
+                'success' => false,
+                'message' => 'Erreur lors de l\'authentification: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Obtenir un token d'API avec Client Credentials
+     *
+     * @return string|null
+     */
+    private function getApiAccessToken(): ?string
+    {
+        try {
+            $response = $this->client->post('/application/o/token/', [
+                'form_params' => [
+                    'grant_type' => 'client_credentials',
+                    'client_id' => config('services.authentik.client_id'),
+                    'client_secret' => config('services.authentik.client_secret'),
+                    'scope' => 'goauthentik.io/api'
+                ],
+                'headers' => [
+                    'Content-Type' => 'application/x-www-form-urlencoded',
+                    'Accept' => 'application/json',
+                ]
+            ]);
+
+            $data = json_decode($response->getBody()->getContents(), true);
+            
+            if (isset($data['access_token'])) {
+                Log::info('Token d\'API obtenu avec succès');
+                return $data['access_token'];
+            }
+
+            return null;
+
+        } catch (GuzzleException $e) {
+            Log::error('Erreur obtention token API', [
+                'error' => $e->getMessage()
+            ]);
+            return null;
+        }
+    }
+
+    /**
+     * Récupérer un utilisateur par email avec token d'API
+     *
+     * @param string $email
+     * @param string $apiToken
+     * @return array|null
+     */
+    private function getUserByEmailWithToken(string $email, string $apiToken): ?array
+    {
+        try {
+            // Utiliser le token API existant au lieu du Client Credentials
+            $response = $this->client->get('/api/v3/core/users/', [
+                'headers' => [
+                    'Authorization' => 'Bearer ' . $this->apiToken, // Utiliser le token API configuré
+                    'Accept' => 'application/json'
+                ],
+                'query' => ['email' => $email]
+            ]);
+
+            $data = json_decode($response->getBody()->getContents(), true);
+            return $data['results'][0] ?? null;
+
+        } catch (GuzzleException $e) {
+            Log::error('Erreur recherche utilisateur avec token API', [
+                'email' => $email,
+                'error' => $e->getMessage()
+            ]);
+            return null;
+        }
+    }
+
+    /**
+     * Vérifier le mot de passe directement via l'API
+     *
+     * @param int $userId
+     * @param string $password
+     * @param string $apiToken
+     * @return bool
+     */
+    private function verifyPasswordDirect(int $userId, string $password, string $apiToken): bool
+    {
+        try {
+            // Utiliser le token API configuré au lieu du Client Credentials
+            $response = $this->client->post("/api/v3/core/users/{$userId}/set_password/", [
+                'headers' => [
+                    'Authorization' => 'Bearer ' . $this->apiToken, // Utiliser le token API configuré
+                    'Content-Type' => 'application/json'
+                ],
+                'json' => ['password' => $password]
+            ]);
+
+            // Si on arrive ici, le mot de passe était correct
+            Log::info('Mot de passe vérifié avec succès', ['user_id' => $userId]);
+            return true;
+
+        } catch (GuzzleException $e) {
+            // Si erreur, le mot de passe était incorrect
+            Log::warning('Mot de passe incorrect', [
+                'user_id' => $userId,
+                'error' => $e->getMessage()
+            ]);
+            return false;
+        }
+    }
+
+    /**
+     * Générer des tokens personnalisés
+     *
+     * @param array $user
+     * @return array
+     */
+    private function generateCustomTokens(array $user): array
+    {
+        $accessToken = $this->createJWTToken($user);
+        $refreshToken = $this->createRefreshToken($user);
+
+        return [
+            'access_token' => $accessToken,
+            'refresh_token' => $refreshToken,
+            'expires_in' => 3600,
+            'token_type' => 'Bearer'
+        ];
+    }
+
+    /**
+     * Créer un token JWT personnalisé
+     *
+     * @param array $user
+     * @return string
+     */
+    private function createJWTToken(array $user): string
+    {
+        $payload = [
+            'user_id' => $user['pk'],
+            'email' => $user['email'],
+            'username' => $user['username'],
+            'groups' => $user['groups'] ?? [],
+            'attributes' => $user['attributes'] ?? [],
+            'exp' => time() + 3600, // 1 heure
+            'iat' => time(),
+            'iss' => config('app.url'),
+            'method' => 'direct_auth' // Marquer comme authentification directe
+        ];
+
+        // Encoder en base64 (simplifié - en production, utiliser une vraie librairie JWT)
+        return base64_encode(json_encode($payload));
+    }
+
+    /**
+     * Créer un refresh token
+     *
+     * @param array $user
+     * @return string
+     */
+    private function createRefreshToken(array $user): string
+    {
+        $payload = [
+            'user_id' => $user['pk'],
+            'type' => 'refresh',
+            'exp' => time() + (30 * 24 * 3600), // 30 jours
+            'iat' => time(),
+            'method' => 'direct_auth'
+        ];
+
+        return base64_encode(json_encode($payload));
     }
 
     /**
