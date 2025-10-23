@@ -14,19 +14,24 @@ use Illuminate\Support\Facades\Route;
 
 // Routes d'authentification publiques (sans authentification requise)
 Route::prefix('auth')->group(function () {
-    // Authentification OAuth avec Authentik
+    // Authentification OAuth avec Authentik (Authorization Code Flow)
     Route::get('/authentik/redirect', [AuthController::class, 'redirectToAuthentik'])
         ->name('auth.authentik.redirect');
     
     Route::get('/authentik/callback', [AuthController::class, 'handleAuthentikCallback'])
         ->name('auth.authentik.callback');
 
-    // Authentification locale (inscription et connexion)
+    // Obtenir l'URL d'authentification pour le frontend
+    Route::get('/auth-url', [AuthController::class, 'getAuthUrl'])
+        ->name('auth.url');
+
+    // Inscription (crée l'utilisateur et retourne l'URL d'auth)
     Route::post('/register', [AuthController::class, 'register'])
         ->name('auth.register');
-    
-    Route::post('/login', [AuthController::class, 'login'])
-        ->name('auth.login');
+
+    // Rafraîchir le token d'accès (sans authentification car le token est expiré)
+    Route::post('/refresh', [AuthController::class, 'refreshToken'])
+        ->name('auth.refresh');
 });
 
 // Routes protégées (authentification requise)

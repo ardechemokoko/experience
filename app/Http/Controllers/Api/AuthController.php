@@ -207,38 +207,21 @@ class AuthController extends Controller
                 'authentik_pk' => $authentikUser['pk'] ?? null
             ]);
 
-            // 5. Authentifier automatiquement l'utilisateur via Authentik
-            $authResult = $this->authentikService->authenticateUser($request->email, $request->password);
-
-            if ($authResult) {
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Inscription réussie. Bienvenue !',
-                    'user' => [
-                        'id' => $utilisateur->id,
-                        'email' => $utilisateur->email,
-                        'role' => $utilisateur->role,
-                    ],
-                    'access_token' => $authResult['tokens']['access_token'],
-                    'refresh_token' => $authResult['tokens']['refresh_token'] ?? null,
-                    'token_type' => 'Bearer',
-                    'expires_in' => $authResult['tokens']['expires_in'] ?? 3600,
-                ], 201);
-            }
-
-            // Si l'authentification automatique échoue, retourner quand même un succès
-            $token = $this->generateAccessToken($utilisateur);
+            // 5. Retourner l'URL d'authentification pour que l'utilisateur se connecte
+            $authUrl = Socialite::driver('authentik')
+                ->stateless()
+                ->redirect()
+                ->getTargetUrl();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Inscription réussie. Veuillez vous connecter.',
+                'message' => 'Inscription réussie. Redirigez l\'utilisateur vers Authentik pour se connecter.',
                 'user' => [
                     'id' => $utilisateur->id,
                     'email' => $utilisateur->email,
                     'role' => $utilisateur->role,
                 ],
-                'access_token' => $token,
-                'token_type' => 'Bearer',
+                'auth_url' => $authUrl,
             ], 201);
 
         } catch (Exception $e) {
@@ -259,100 +242,38 @@ class AuthController extends Controller
     }
 
     /**
-     * Connexion (authentification via Authentik)
+     * Obtenir l'URL d'authentification Authentik (pour Authorization Code Flow)
      * 
-     * @param LoginRequest $request
      * @return JsonResponse
      */
-    public function login(LoginRequest $request): JsonResponse
+    public function getAuthUrl(): JsonResponse
     {
         try {
-            // 1. Authentifier via Authentik
-            $authResult = $this->authentikService->authenticateUser($request->email, $request->password);
-
-            if (!$authResult) {
-                Log::warning('Tentative de connexion échouée (Authentik)', [
-                    'email' => $request->email,
-                    'ip' => $request->ip()
-                ]);
-
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Identifiants incorrects. Veuillez vérifier votre email et mot de passe.',
-                ], 401);
-            }
-
-            // 2. Récupérer ou créer l'utilisateur dans notre DB
-            $utilisateur = Utilisateur::where('email', $request->email)->first();
-
-            if (!$utilisateur) {
-                // Si l'utilisateur existe dans Authentik mais pas dans notre DB, le créer
-                DB::beginTransaction();
-                try {
-                    $utilisateur = Utilisateur::create([
-                        'email' => $request->email,
-                        'password' => Hash::make(Str::random(32)),
-                        'role' => $authResult['user']['attributes']['role'][0] ?? 'candidat',
-                    ]);
-
-                    Personne::create([
-                        'utilisateur_id' => $utilisateur->id,
-                        'nom' => $authResult['user']['family_name'] ?? '',
-                        'prenom' => $authResult['user']['given_name'] ?? $authResult['user']['name'] ?? '',
-                        'email' => $request->email,
-                        'contact' => $authResult['user']['attributes']['contact'][0] ?? '',
-                        'adresse' => $authResult['user']['attributes']['adresse'][0] ?? '',
-                    ]);
-
-                    DB::commit();
-
-                    Log::info('Utilisateur synchronisé depuis Authentik', [
-                        'user_id' => $utilisateur->id,
-                        'email' => $request->email
-                    ]);
-                } catch (Exception $e) {
-                    DB::rollBack();
-                    throw $e;
-                }
-            }
-
-            Log::info('Connexion réussie via Authentik', [
-                'user_id' => $utilisateur->id,
-                'email' => $utilisateur->email,
-                'ip' => $request->ip()
-            ]);
+            $authUrl = Socialite::driver('authentik')
+                ->stateless()
+                ->redirect()
+                ->getTargetUrl();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Connexion réussie. Bienvenue !',
-                'user' => [
-                    'id' => $utilisateur->id,
-                    'email' => $utilisateur->email,
-                    'role' => $utilisateur->role,
-                ],
-                'access_token' => $authResult['tokens']['access_token'],
-                'refresh_token' => $authResult['tokens']['refresh_token'] ?? null,
-                'token_type' => 'Bearer',
-                'expires_in' => $authResult['tokens']['expires_in'] ?? 3600,
+                'auth_url' => $authUrl,
+                'message' => 'Redirigez l\'utilisateur vers cette URL pour s\'authentifier.'
             ]);
-
         } catch (Exception $e) {
-            Log::error('Erreur lors de la connexion', [
-                'email' => $request->email,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+            Log::error('Erreur génération URL Authentik', [
+                'error' => $e->getMessage()
             ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'Erreur lors de la connexion.',
+                'message' => 'Erreur lors de la génération de l\'URL d\'authentification.',
                 'error' => config('app.debug') ? $e->getMessage() : 'Une erreur est survenue.'
             ], 500);
         }
     }
 
     /**
-     * Déconnexion
+     * Déconnexion - Révoque le token Authentik
      * 
      * @param Request $request
      * @return JsonResponse
@@ -360,26 +281,109 @@ class AuthController extends Controller
     public function logout(Request $request): JsonResponse
     {
         try {
-            // Si vous utilisez Laravel Sanctum, invalidez le token actuel
-            // $request->user()->currentAccessToken()->delete();
+            // Récupérer le token depuis le header Authorization
+            $authHeader = $request->header('Authorization');
             
-            Log::info('Déconnexion utilisateur', [
-                'ip' => $request->ip()
-            ]);
+            if (!$authHeader || !str_starts_with($authHeader, 'Bearer ')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Token d\'authentification manquant.',
+                ], 401);
+            }
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Déconnexion réussie. À bientôt !',
-            ]);
+            // Extraire le token
+            $accessToken = substr($authHeader, 7); // Enlever "Bearer "
+
+            // Récupérer le refresh token depuis le body (optionnel)
+            $refreshToken = $request->input('refresh_token');
+
+            // Révoquer les tokens côté Authentik
+            $revoked = $this->authentikService->logout($accessToken, $refreshToken);
+
+            if ($revoked) {
+                Log::info('Déconnexion utilisateur réussie', [
+                    'ip' => $request->ip(),
+                    'access_token_revoked' => true,
+                    'refresh_token_revoked' => !empty($refreshToken)
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Déconnexion réussie. À bientôt !',
+                ]);
+            } else {
+                // Même si la révocation échoue, on considère la déconnexion côté client
+                Log::warning('Révocation token partielle', [
+                    'ip' => $request->ip()
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Déconnexion effectuée. Le token a peut-être déjà expiré.',
+                ]);
+            }
 
         } catch (Exception $e) {
             Log::error('Erreur lors de la déconnexion', [
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ]);
 
             return response()->json([
                 'success' => false,
                 'message' => 'Erreur lors de la déconnexion.',
+                'error' => config('app.debug') ? $e->getMessage() : 'Une erreur est survenue.'
+            ], 500);
+        }
+    }
+
+    /**
+     * Rafraîchir le token d'accès
+     * 
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function refreshToken(Request $request): JsonResponse
+    {
+        try {
+            $refreshToken = $request->input('refresh_token');
+
+            if (!$refreshToken) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Le refresh token est obligatoire.',
+                ], 400);
+            }
+
+            // Rafraîchir le token via Authentik
+            $newTokens = $this->authentikService->refreshAccessToken($refreshToken);
+
+            if (!$newTokens) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Impossible de rafraîchir le token. Veuillez vous reconnecter.',
+                ], 401);
+            }
+
+            Log::info('Token rafraîchi avec succès');
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Token rafraîchi avec succès.',
+                'access_token' => $newTokens['access_token'],
+                'refresh_token' => $newTokens['refresh_token'] ?? $refreshToken,
+                'token_type' => 'Bearer',
+                'expires_in' => $newTokens['expires_in'] ?? 3600,
+            ]);
+
+        } catch (Exception $e) {
+            Log::error('Erreur rafraîchissement token', [
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors du rafraîchissement du token.',
                 'error' => config('app.debug') ? $e->getMessage() : 'Une erreur est survenue.'
             ], 500);
         }

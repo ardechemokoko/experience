@@ -447,5 +447,108 @@ class AuthentikService
             return [];
         }
     }
+
+    /**
+     * Révoquer un token d'accès Authentik
+     *
+     * @param string $accessToken
+     * @return bool
+     */
+    public function revokeToken(string $accessToken): bool
+    {
+        try {
+            // Authentik endpoint pour révoquer un token
+            $this->client->post('/application/o/revoke/', [
+                'form_params' => [
+                    'token' => $accessToken,
+                    'client_id' => config('services.authentik.client_id'),
+                    'client_secret' => config('services.authentik.client_secret'),
+                ],
+                'headers' => [
+                    'Content-Type' => 'application/x-www-form-urlencoded',
+                ]
+            ]);
+
+            Log::info('Token révoqué dans Authentik', [
+                'token_preview' => substr($accessToken, 0, 20) . '...'
+            ]);
+
+            return true;
+
+        } catch (GuzzleException $e) {
+            Log::error('Erreur révocation token Authentik', [
+                'error' => $e->getMessage(),
+                'response' => $e->hasResponse() ? $e->getResponse()->getBody()->getContents() : null
+            ]);
+            return false;
+        }
+    }
+
+    /**
+     * Déconnecter un utilisateur (logout)
+     * Révoque le token d'accès et le refresh token
+     *
+     * @param string $accessToken
+     * @param string|null $refreshToken
+     * @return bool
+     */
+    public function logout(string $accessToken, ?string $refreshToken = null): bool
+    {
+        $success = true;
+
+        // Révoquer le access token
+        if (!$this->revokeToken($accessToken)) {
+            $success = false;
+        }
+
+        // Révoquer le refresh token si fourni
+        if ($refreshToken && !$this->revokeToken($refreshToken)) {
+            $success = false;
+        }
+
+        if ($success) {
+            Log::info('Déconnexion complète réussie', [
+                'access_token_revoked' => true,
+                'refresh_token_revoked' => !empty($refreshToken)
+            ]);
+        }
+
+        return $success;
+    }
+
+    /**
+     * Rafraîchir un token d'accès
+     *
+     * @param string $refreshToken
+     * @return array|null
+     */
+    public function refreshAccessToken(string $refreshToken): ?array
+    {
+        try {
+            $response = $this->client->post('/application/o/token/', [
+                'form_params' => [
+                    'grant_type' => 'refresh_token',
+                    'refresh_token' => $refreshToken,
+                    'client_id' => config('services.authentik.client_id'),
+                    'client_secret' => config('services.authentik.client_secret'),
+                ],
+                'headers' => [
+                    'Content-Type' => 'application/x-www-form-urlencoded',
+                ]
+            ]);
+
+            $tokens = json_decode($response->getBody()->getContents(), true);
+
+            Log::info('Token rafraîchi avec succès');
+
+            return $tokens;
+
+        } catch (GuzzleException $e) {
+            Log::error('Erreur rafraîchissement token', [
+                'error' => $e->getMessage()
+            ]);
+            return null;
+        }
+    }
 }
 
