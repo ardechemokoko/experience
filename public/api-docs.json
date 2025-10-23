@@ -1026,8 +1026,16 @@
                 "responses": {
                     "200": {
                         "description": "✅ Liste des candidats récupérée"
+                    },
+                    "401": {
+                        "description": "❌ Non authentifié"
                     }
-                }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
             },
             "post": {
                 "tags": [

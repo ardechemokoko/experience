@@ -45,6 +45,7 @@ class CandidatController extends Controller
      *     tags={"👨‍🎓 Candidats"},
      *     summary="📋 Liste de tous les candidats",
      *     description="Récupère la liste paginée de tous les candidats avec leurs informations personnelles",
+     *     security={{"BearerAuth":{}}},
      *     @OA\Parameter(
      *         name="page",
      *         in="query",
@@ -62,7 +63,8 @@ class CandidatController extends Controller
      *     @OA\Response(
      *         response=200,
      *         description="✅ Liste des candidats récupérée"
-     *     )
+     *     ),
+     *     @OA\Response(response=401, description="❌ Non authentifié")
      * )
      */
     public function index(Request $request): AnonymousResourceCollection
