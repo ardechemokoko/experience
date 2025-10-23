@@ -57,11 +57,6 @@ use Laravel\Socialite\Facades\Socialite;
  * )
  * 
  * @OA\Tag(
- *     name="👤 Utilisateurs",
- *     description="Gestion des utilisateurs et profils"
- * )
- * 
- * @OA\Tag(
  *     name="🔄 Tokens",
  *     description="Gestion des tokens d'accès et de rafraîchissement"
  * )
@@ -530,44 +525,6 @@ class AuthController extends Controller
         }
     }
 
-    /**
-     * @OA\Get(
-     *     path="/api/auth/me",
-     *     operationId="getUserProfile",
-     *     tags={"👤 Utilisateurs"},
-     *     summary="👤 Informations de l'utilisateur connecté",
-     *     description="Récupère les informations complètes de l'utilisateur actuellement connecté.",
-     *     security={{"BearerAuth":{}}},
-     *     @OA\Response(
-     *         response=200,
-     *         description="✅ Informations utilisateur récupérées",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="success", type="boolean", example=true),
-     *             @OA\Property(property="user", type="object")
-     *         )
-     *     ),
-     *     @OA\Response(response=401, description="❌ Non authentifié"),
-     *     @OA\Response(response=500, description="❌ Erreur serveur")
-     * )
-     */
-    public function me(Request $request): JsonResponse
-    {
-        try {
-            return response()->json([
-                'success' => true,
-                'user' => $request->user()->load('personne'),
-            ]);
-        } catch (Exception $e) {
-            Log::error('Erreur récupération profil utilisateur', [
-                'error' => $e->getMessage()
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Erreur lors de la récupération des informations.'
-            ], 500);
-        }
-    }
 
     /**
      * @OA\Post(

@@ -123,6 +123,44 @@
                                                 "role": {
                                                     "type": "string",
                                                     "example": "candidat"
+                                                },
+                                                "created_at": {
+                                                    "type": "string",
+                                                    "format": "date-time",
+                                                    "example": "2025-10-23T00:00:00+00:00"
+                                                },
+                                                "personne": {
+                                                    "properties": {
+                                                        "id": {
+                                                            "type": "string",
+                                                            "example": "019a0e63-a1cd-7012-9586-57868bb66c6f"
+                                                        },
+                                                        "nom": {
+                                                            "type": "string",
+                                                            "example": "Dupont"
+                                                        },
+                                                        "prenom": {
+                                                            "type": "string",
+                                                            "example": "Jean"
+                                                        },
+                                                        "nom_complet": {
+                                                            "type": "string",
+                                                            "example": "Jean Dupont"
+                                                        },
+                                                        "email": {
+                                                            "type": "string",
+                                                            "example": "jean.dupont@example.com"
+                                                        },
+                                                        "contact": {
+                                                            "type": "string",
+                                                            "example": "0612345678"
+                                                        },
+                                                        "adresse": {
+                                                            "type": "string",
+                                                            "example": "123 Rue de la Paix, Paris"
+                                                        }
+                                                    },
+                                                    "type": "object"
                                                 }
                                             },
                                             "type": "object"
@@ -130,6 +168,19 @@
                                         "auth_url": {
                                             "type": "string",
                                             "example": "http://5.189.156.115:31015/application/o/authorize/?client_id=..."
+                                        },
+                                        "authentik": {
+                                            "properties": {
+                                                "user_id": {
+                                                    "type": "integer",
+                                                    "example": 28
+                                                },
+                                                "username": {
+                                                    "type": "string",
+                                                    "example": "jean.dupont@example.com"
+                                                }
+                                            },
+                                            "type": "object"
                                         }
                                     },
                                     "type": "object"
@@ -228,6 +279,44 @@
                                                 "role": {
                                                     "type": "string",
                                                     "example": "candidat"
+                                                },
+                                                "created_at": {
+                                                    "type": "string",
+                                                    "format": "date-time",
+                                                    "example": "2025-10-23T00:00:00+00:00"
+                                                },
+                                                "personne": {
+                                                    "properties": {
+                                                        "id": {
+                                                            "type": "string",
+                                                            "example": "019a0e34-d153-7330-8cb6-80b14fd8811c"
+                                                        },
+                                                        "nom": {
+                                                            "type": "string",
+                                                            "example": "Dupont"
+                                                        },
+                                                        "prenom": {
+                                                            "type": "string",
+                                                            "example": "Jean"
+                                                        },
+                                                        "nom_complet": {
+                                                            "type": "string",
+                                                            "example": "Jean Dupont"
+                                                        },
+                                                        "email": {
+                                                            "type": "string",
+                                                            "example": "jean.dupont@example.com"
+                                                        },
+                                                        "contact": {
+                                                            "type": "string",
+                                                            "example": "0612345678"
+                                                        },
+                                                        "adresse": {
+                                                            "type": "string",
+                                                            "example": "123 Rue de la Paix, Paris"
+                                                        }
+                                                    },
+                                                    "type": "object"
                                                 }
                                             },
                                             "type": "object"
@@ -251,6 +340,19 @@
                                         "method": {
                                             "type": "string",
                                             "example": "direct_auth"
+                                        },
+                                        "authentik": {
+                                            "properties": {
+                                                "user_id": {
+                                                    "type": "integer",
+                                                    "example": 28
+                                                },
+                                                "username": {
+                                                    "type": "string",
+                                                    "example": "jean.dupont@example.com"
+                                                }
+                                            },
+                                            "type": "object"
                                         }
                                     },
                                     "type": "object"
@@ -403,48 +505,6 @@
                 }
             }
         },
-        "/api/auth/me": {
-            "get": {
-                "tags": [
-                    "👤 Utilisateurs"
-                ],
-                "summary": "👤 Informations de l'utilisateur connecté",
-                "description": "Récupère les informations complètes de l'utilisateur actuellement connecté.",
-                "operationId": "getUserProfile",
-                "responses": {
-                    "200": {
-                        "description": "✅ Informations utilisateur récupérées",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "success": {
-                                            "type": "boolean",
-                                            "example": true
-                                        },
-                                        "user": {
-                                            "type": "object"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "❌ Non authentifié"
-                    },
-                    "500": {
-                        "description": "❌ Erreur serveur"
-                    }
-                },
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ]
-            }
-        },
         "/api/auth/logout": {
             "post": {
                 "tags": [
@@ -592,10 +652,6 @@
         {
             "name": "🔐 Authentification",
             "description": "Endpoints d'authentification avec Authentik"
-        },
-        {
-            "name": "👤 Utilisateurs",
-            "description": "Gestion des utilisateurs et profils"
         },
         {
             "name": "🔄 Tokens",

@@ -36,24 +36,20 @@ Route::prefix('auth')->group(function () {
     // Rafraîchir le token d'accès (sans authentification car le token est expiré)
     Route::post('/refresh', [AuthController::class, 'refreshToken'])
         ->name('auth.refresh');
-});
-
-// Routes protégées (authentification requise)
-Route::middleware('auth:api')->group(function () {
-    // Déconnexion
-    Route::post('/auth/logout', [AuthController::class, 'logout'])
-        ->name('auth.logout');
     
-    // Obtenir les informations de l'utilisateur connecté
-    Route::get('/auth/me', [AuthController::class, 'me'])
-        ->name('auth.me');
-
-    // Ici, vous pouvez ajouter d'autres routes protégées pour votre application
-    // Exemple:
-    // Route::apiResource('candidats', CandidatController::class);
-    // Route::apiResource('auto-ecoles', AutoEcoleController::class);
-    // Route::apiResource('dossiers', DossierController::class);
+    // Déconnexion
+    Route::post('/logout', [AuthController::class, 'logout'])
+        ->name('auth.logout');
 });
+
+// Routes protégées (authentification requise) - Pour une implémentation future
+// Route::middleware('auth:api')->group(function () {
+//     // Ici, vous pouvez ajouter d'autres routes protégées pour votre application
+//     // Exemple:
+//     // Route::apiResource('candidats', CandidatController::class);
+//     // Route::apiResource('auto-ecoles', AutoEcoleController::class);
+//     // Route::apiResource('dossiers', DossierController::class);
+// });
 
 // Route de test (publique)
 Route::get('/health', function () {
