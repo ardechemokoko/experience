@@ -17,6 +17,11 @@ return Application::configure(basePath: dirname(__DIR__))
             'auth.token' => \App\Http\Middleware\AuthentikTokenMiddleware::class,
             'role' => \App\Http\Middleware\CheckRoleMiddleware::class,
         ]);
+        
+        // Ajouter le middleware CORS globalement pour les routes API
+        $middleware->api(prepend: [
+            \Illuminate\Http\Middleware\HandleCors::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
