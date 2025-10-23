@@ -20,8 +20,56 @@
             "description": "Serveur de développement local"
         },
         {
-            "url": "https://api.auto-ecole.com",
-            "description": "Serveur de production"
+            "url": "https://9c8r7bbvybn.preview.infomaniak.website",
+            "description": "Serveur de production Infomaniak"
+        },
+        {
+            "url": "http://localhost:8000",
+            "description": "Serveur de développement local"
+        },
+        {
+            "url": "https://9c8r7bbvybn.preview.infomaniak.website",
+            "description": "Serveur de production Infomaniak"
+        },
+        {
+            "url": "http://localhost:8000",
+            "description": "Serveur de développement local"
+        },
+        {
+            "url": "https://9c8r7bbvybn.preview.infomaniak.website",
+            "description": "Serveur de production Infomaniak"
+        },
+        {
+            "url": "http://localhost:8000",
+            "description": "Serveur de développement local"
+        },
+        {
+            "url": "https://9c8r7bbvybn.preview.infomaniak.website",
+            "description": "Serveur de production Infomaniak"
+        },
+        {
+            "url": "http://localhost:8000",
+            "description": "Serveur de développement local"
+        },
+        {
+            "url": "https://9c8r7bbvybn.preview.infomaniak.website",
+            "description": "Serveur de production Infomaniak"
+        },
+        {
+            "url": "http://localhost:8000",
+            "description": "Serveur de développement local"
+        },
+        {
+            "url": "https://9c8r7bbvybn.preview.infomaniak.website",
+            "description": "Serveur de production Infomaniak"
+        },
+        {
+            "url": "http://localhost:8000",
+            "description": "Serveur de développement local"
+        },
+        {
+            "url": "https://9c8r7bbvybn.preview.infomaniak.website",
+            "description": "Serveur de production Infomaniak"
         }
     ],
     "paths": {

@@ -39,8 +39,8 @@ use Laravel\Socialite\Facades\Socialite;
  * )
  * 
  * @OA\Server(
- *     url="https://api.auto-ecole.com",
- *     description="Serveur de production"
+ *     url="https://9c8r7bbvybn.preview.infomaniak.website",
+ *     description="Serveur de production Infomaniak"
  * )
  * 
  * @OA\SecurityScheme(

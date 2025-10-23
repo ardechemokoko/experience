@@ -21,6 +21,16 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
+ * @OA\Server(
+ *     url="http://localhost:8000",
+ *     description="Serveur de développement local"
+ * )
+ * 
+ * @OA\Server(
+ *     url="https://9c8r7bbvybn.preview.infomaniak.website",
+ *     description="Serveur de production Infomaniak"
+ * )
+ * 
  * @OA\Tag(
  *     name="👨‍🎓 Candidats",
  *     description="Gestion des candidats au permis de conduire"
