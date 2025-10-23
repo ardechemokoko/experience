@@ -7,8 +7,11 @@ use App\Http\Requests\AutoEcole\StoreAutoEcoleRequest;
 use App\Http\Requests\AutoEcole\UpdateAutoEcoleRequest;
 use App\Http\Resources\AutoEcoleResource;
 use App\Http\Resources\FormationAutoEcoleResource;
+use App\Http\Resources\DossierResource;
 use App\Models\AutoEcole;
 use App\Models\FormationAutoEcole;
+use App\Models\Dossier;
+use App\Models\Utilisateur;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -262,6 +265,106 @@ class AutoEcoleController extends Controller
                 'success' => false,
                 'message' => 'Auto-école non trouvée.'
             ], 404);
+        }
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/api/auto-ecoles/mes-dossiers",
+     *     operationId="mesDossiersAutoEcole",
+     *     tags={"🏫 Auto-Écoles"},
+     *     summary="📁 Dossiers de mon auto-école",
+     *     description="Récupère tous les dossiers de l'auto-école du responsable connecté",
+     *     security={{"BearerAuth":{}}},
+     *     @OA\Parameter(name="statut", in="query", @OA\Schema(type="string")),
+     *     @OA\Response(
+     *         response=200,
+     *         description="✅ Liste des dossiers",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="auto_ecole", type="object"),
+     *             @OA\Property(property="dossiers", type="array", @OA\Items(type="object")),
+     *             @OA\Property(property="statistiques", type="object")
+     *         )
+     *     ),
+     *     @OA\Response(response=400, description="❌ Pas d'auto-école associée"),
+     *     @OA\Response(response=401, description="❌ Non authentifié")
+     * )
+     */
+    public function mesDossiers(Request $request): JsonResponse
+    {
+        try {
+            // Récupérer l'auto-école du responsable connecté
+            $token = $request->bearerToken();
+            if (!$token) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Token d\'authentification manquant.'
+                ], 401);
+            }
+
+            $payload = json_decode(base64_decode($token), true);
+            $user = Utilisateur::with('personne')->find($payload['user_id']);
+
+            if (!$user || !$user->personne) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Utilisateur non trouvé.'
+                ], 404);
+            }
+
+            // Récupérer l'auto-école dont l'utilisateur est responsable
+            $autoEcole = AutoEcole::where('responsable_id', $user->personne->id)->first();
+
+            if (!$autoEcole) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Aucune auto-école associée à votre compte.'
+                ], 400);
+            }
+
+            // Récupérer les dossiers de l'auto-école
+            $query = Dossier::where('auto_ecole_id', $autoEcole->id)
+                ->with(['candidat.personne', 'formation.typePermis', 'documents']);
+
+            // Filtrer par statut si demandé
+            if ($request->has('statut')) {
+                $query->where('statut', $request->statut);
+            }
+
+            $dossiers = $query->latest()->get();
+
+            // Statistiques
+            $statistiques = [
+                'total' => $dossiers->count(),
+                'en_attente' => $dossiers->where('statut', 'en_attente')->count(),
+                'en_cours' => $dossiers->where('statut', 'en_cours')->count(),
+                'valide' => $dossiers->where('statut', 'valide')->count(),
+                'rejete' => $dossiers->where('statut', 'rejete')->count(),
+            ];
+
+            Log::info('Consultation dossiers auto-école', [
+                'auto_ecole_id' => $autoEcole->id,
+                'total_dossiers' => $statistiques['total']
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'auto_ecole' => new AutoEcoleResource($autoEcole),
+                'dossiers' => DossierResource::collection($dossiers),
+                'statistiques' => $statistiques
+            ]);
+
+        } catch (Exception $e) {
+            Log::error('Erreur récupération dossiers auto-école', [
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la récupération des dossiers.',
+                'error' => config('app.debug') ? $e->getMessage() : null
+            ], 500);
         }
     }
 }

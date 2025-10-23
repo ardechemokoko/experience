@@ -57,12 +57,17 @@ Route::prefix('candidats')->group(function () {
 
 // Routes spécifiques pour auto-écoles
 Route::get('/auto-ecoles/{auto_ecole}/formations', [AutoEcoleController::class, 'formations'])->name('auto-ecoles.formations');
+Route::get('/auto-ecoles/mes-dossiers', [AutoEcoleController::class, 'mesDossiers'])->name('auto-ecoles.mes-dossiers');
 
 // Routes spécifiques pour formations
 Route::get('/formations/{formation}/documents-requis', [FormationAutoEcoleController::class, 'documentsRequis'])->name('formations.documents-requis');
 
 // Routes spécifiques pour dossiers
 Route::post('/dossiers/{dossier}/upload-document', [DossierController::class, 'uploadDocument'])->name('dossiers.upload-document');
+Route::post('/dossiers/{dossier}/valider', [DossierController::class, 'valider'])->name('dossiers.valider');
+
+// Routes spécifiques pour documents
+Route::post('/documents/{document}/valider', [DossierController::class, 'validerDocument'])->name('documents.valider');
 
 // Routes des ressources métier (CRUD standard)
 Route::apiResource('candidats', CandidatController::class);

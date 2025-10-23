@@ -885,6 +885,66 @@
                 }
             }
         },
+        "/api/auto-ecoles/mes-dossiers": {
+            "get": {
+                "tags": [
+                    "🏫 Auto-Écoles"
+                ],
+                "summary": "📁 Dossiers de mon auto-école",
+                "description": "Récupère tous les dossiers de l'auto-école du responsable connecté",
+                "operationId": "mesDossiersAutoEcole",
+                "parameters": [
+                    {
+                        "name": "statut",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "✅ Liste des dossiers",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "auto_ecole": {
+                                            "type": "object"
+                                        },
+                                        "dossiers": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        },
+                                        "statistiques": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "❌ Pas d'auto-école associée"
+                    },
+                    "401": {
+                        "description": "❌ Non authentifié"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            }
+        },
         "/api/candidats": {
             "get": {
                 "tags": [
@@ -1760,6 +1820,144 @@
                     },
                     "404": {
                         "description": "❌ Dossier non trouvé"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/dossiers/{id}/valider": {
+            "post": {
+                "tags": [
+                    "📁 Dossiers"
+                ],
+                "summary": "✅ Valider ou rejeter un dossier",
+                "description": "Permet à une auto-école de valider ou rejeter un dossier de candidature",
+                "operationId": "validerDossier",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "statut"
+                                ],
+                                "properties": {
+                                    "statut": {
+                                        "type": "string",
+                                        "enum": [
+                                            "valide",
+                                            "rejete"
+                                        ],
+                                        "example": "valide"
+                                    },
+                                    "commentaires": {
+                                        "type": "string",
+                                        "example": "Dossier complet et conforme"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "✅ Dossier validé/rejeté",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "dossier": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "❌ Non autorisé"
+                    },
+                    "404": {
+                        "description": "❌ Dossier non trouvé"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/documents/{id}/valider": {
+            "post": {
+                "tags": [
+                    "📄 Documents"
+                ],
+                "summary": "✅ Valider ou rejeter un document",
+                "description": "Permet à une auto-école de valider ou rejeter un document",
+                "operationId": "validerDocument",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "valide"
+                                ],
+                                "properties": {
+                                    "valide": {
+                                        "type": "boolean",
+                                        "example": true
+                                    },
+                                    "commentaires": {
+                                        "type": "string",
+                                        "example": "Document conforme"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "✅ Document validé/rejeté"
+                    },
+                    "403": {
+                        "description": "❌ Non autorisé"
                     }
                 },
                 "security": [

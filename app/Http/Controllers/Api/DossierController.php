@@ -5,12 +5,15 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Dossier\StoreDossierRequest;
 use App\Http\Requests\Dossier\UpdateDossierRequest;
+use App\Http\Requests\Dossier\ValiderDossierRequest;
 use App\Http\Requests\Document\UploadDocumentRequest;
+use App\Http\Requests\Document\ValiderDocumentRequest;
 use App\Http\Resources\DossierResource;
 use App\Http\Resources\DocumentResource;
 use App\Models\Dossier;
 use App\Models\Document;
 use App\Models\Utilisateur;
+use App\Models\AutoEcole;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -319,6 +322,194 @@ class DossierController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Erreur lors de l\'upload du document.',
+                'error' => config('app.debug') ? $e->getMessage() : null
+            ], 500);
+        }
+    }
+
+    /**
+     * @OA\Post(
+     *     path="/api/dossiers/{id}/valider",
+     *     operationId="validerDossier",
+     *     tags={"📁 Dossiers"},
+     *     summary="✅ Valider ou rejeter un dossier",
+     *     description="Permet à une auto-école de valider ou rejeter un dossier de candidature",
+     *     security={{"BearerAuth":{}}},
+     *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="string")),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"statut"},
+     *             @OA\Property(property="statut", type="string", enum={"valide","rejete"}, example="valide"),
+     *             @OA\Property(property="commentaires", type="string", example="Dossier complet et conforme")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="✅ Dossier validé/rejeté",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="message", type="string"),
+     *             @OA\Property(property="dossier", type="object")
+     *         )
+     *     ),
+     *     @OA\Response(response=403, description="❌ Non autorisé"),
+     *     @OA\Response(response=404, description="❌ Dossier non trouvé")
+     * )
+     */
+    public function valider(ValiderDossierRequest $request, string $id): JsonResponse
+    {
+        try {
+            DB::beginTransaction();
+
+            $dossier = Dossier::with(['candidat.personne', 'autoEcole', 'formation'])->findOrFail($id);
+
+            // Vérifier que l'utilisateur est responsable de cette auto-école
+            $token = $request->bearerToken();
+            if ($token) {
+                $payload = json_decode(base64_decode($token), true);
+                $user = Utilisateur::with('personne')->find($payload['user_id']);
+
+                if ($user && $user->personne) {
+                    $autoEcole = AutoEcole::where('responsable_id', $user->personne->id)
+                        ->where('id', $dossier->auto_ecole_id)
+                        ->first();
+
+                    if (!$autoEcole && $user->role !== 'admin') {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Vous n\'êtes pas autorisé à valider ce dossier.'
+                        ], 403);
+                    }
+                }
+            }
+
+            // Mettre à jour le dossier
+            $dossier->update([
+                'statut' => $request->statut,
+                'date_modification' => now(),
+                'commentaires' => $request->commentaires,
+            ]);
+
+            DB::commit();
+
+            $message = $request->statut === 'valide' 
+                ? 'Dossier validé avec succès !' 
+                : 'Dossier rejeté.';
+
+            Log::info('Dossier validé/rejeté', [
+                'dossier_id' => $id,
+                'statut' => $request->statut,
+                'responsable_id' => $user->personne->id ?? null
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'dossier' => new DossierResource($dossier)
+            ]);
+
+        } catch (Exception $e) {
+            DB::rollBack();
+
+            Log::error('Erreur validation dossier', [
+                'dossier_id' => $id,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la validation du dossier.',
+                'error' => config('app.debug') ? $e->getMessage() : null
+            ], 500);
+        }
+    }
+
+    /**
+     * @OA\Post(
+     *     path="/api/documents/{id}/valider",
+     *     operationId="validerDocument",
+     *     tags={"📄 Documents"},
+     *     summary="✅ Valider ou rejeter un document",
+     *     description="Permet à une auto-école de valider ou rejeter un document",
+     *     security={{"BearerAuth":{}}},
+     *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="string")),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"valide"},
+     *             @OA\Property(property="valide", type="boolean", example=true),
+     *             @OA\Property(property="commentaires", type="string", example="Document conforme")
+     *         )
+     *     ),
+     *     @OA\Response(response=200, description="✅ Document validé/rejeté"),
+     *     @OA\Response(response=403, description="❌ Non autorisé")
+     * )
+     */
+    public function validerDocument(ValiderDocumentRequest $request, string $id): JsonResponse
+    {
+        try {
+            DB::beginTransaction();
+
+            $document = Document::with('dossier.autoEcole')->findOrFail($id);
+
+            // Vérifier que l'utilisateur est responsable de l'auto-école du dossier
+            $token = $request->bearerToken();
+            if ($token) {
+                $payload = json_decode(base64_decode($token), true);
+                $user = Utilisateur::with('personne')->find($payload['user_id']);
+
+                if ($user && $user->personne) {
+                    $autoEcole = AutoEcole::where('responsable_id', $user->personne->id)
+                        ->where('id', $document->dossier->auto_ecole_id)
+                        ->first();
+
+                    if (!$autoEcole && $user->role !== 'admin') {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Vous n\'êtes pas autorisé à valider ce document.'
+                        ], 403);
+                    }
+                }
+            }
+
+            // Mettre à jour le document
+            $document->update([
+                'valide' => $request->valide,
+                'commentaires' => $request->commentaires,
+            ]);
+
+            // Mettre à jour la date de modification du dossier
+            $document->dossier->update(['date_modification' => now()]);
+
+            DB::commit();
+
+            $message = $request->valide 
+                ? 'Document validé avec succès !' 
+                : 'Document rejeté.';
+
+            Log::info('Document validé/rejeté', [
+                'document_id' => $id,
+                'valide' => $request->valide
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'document' => new DocumentResource($document->load('typeDocument'))
+            ]);
+
+        } catch (Exception $e) {
+            DB::rollBack();
+
+            Log::error('Erreur validation document', [
+                'document_id' => $id,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la validation du document.',
                 'error' => config('app.debug') ? $e->getMessage() : null
             ], 500);
         }
