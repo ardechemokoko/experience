@@ -73,6 +73,7 @@ class CandidatController extends Controller
      *     tags={"👨‍🎓 Candidats"},
      *     summary="➕ Créer un nouveau candidat",
      *     description="Crée un nouveau candidat avec ses informations personnelles",
+     *     security={{"BearerAuth":{}}},
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
@@ -92,6 +93,7 @@ class CandidatController extends Controller
      *         response=201,
      *         description="✅ Candidat créé avec succès"
      *     ),
+     *     @OA\Response(response=401, description="❌ Non authentifié"),
      *     @OA\Response(response=422, description="❌ Erreur de validation")
      * )
      */
