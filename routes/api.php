@@ -1,6 +1,12 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\CandidatController;
+use App\Http\Controllers\Api\AutoEcoleController;
+use App\Http\Controllers\Api\FormationAutoEcoleController;
+use App\Http\Controllers\Api\DossierController;
+use App\Http\Controllers\Api\DocumentController;
+use App\Http\Controllers\Api\ReferentielController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -42,14 +48,29 @@ Route::prefix('auth')->group(function () {
         ->name('auth.logout');
 });
 
-// Routes protégées (authentification requise) - Pour une implémentation future
-// Route::middleware('auth:api')->group(function () {
-//     // Ici, vous pouvez ajouter d'autres routes protégées pour votre application
-//     // Exemple:
-//     // Route::apiResource('candidats', CandidatController::class);
-//     // Route::apiResource('auto-ecoles', AutoEcoleController::class);
-//     // Route::apiResource('dossiers', DossierController::class);
-// });
+// Routes spécifiques pour le flux d'inscription candidat
+Route::prefix('candidats')->group(function () {
+    Route::post('/complete-profile', [CandidatController::class, 'completeProfile'])->name('candidats.complete-profile');
+    Route::post('/inscription-formation', [CandidatController::class, 'inscriptionFormation'])->name('candidats.inscription-formation');
+    Route::get('/mes-dossiers', [CandidatController::class, 'mesDossiers'])->name('candidats.mes-dossiers');
+});
+
+// Routes spécifiques pour auto-écoles
+Route::get('/auto-ecoles/{auto_ecole}/formations', [AutoEcoleController::class, 'formations'])->name('auto-ecoles.formations');
+
+// Routes spécifiques pour formations
+Route::get('/formations/{formation}/documents-requis', [FormationAutoEcoleController::class, 'documentsRequis'])->name('formations.documents-requis');
+
+// Routes spécifiques pour dossiers
+Route::post('/dossiers/{dossier}/upload-document', [DossierController::class, 'uploadDocument'])->name('dossiers.upload-document');
+
+// Routes des ressources métier (CRUD standard)
+Route::apiResource('candidats', CandidatController::class);
+Route::apiResource('auto-ecoles', AutoEcoleController::class);
+Route::apiResource('formations', FormationAutoEcoleController::class);
+Route::apiResource('dossiers', DossierController::class);
+Route::apiResource('documents', DocumentController::class);
+Route::apiResource('referentiels', ReferentielController::class);
 
 // Route de test (publique)
 Route::get('/health', function () {
