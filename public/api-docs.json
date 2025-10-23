@@ -20,8 +20,56 @@
             "description": "Serveur de développement local"
         },
         {
-            "url": "https://api.auto-ecole.com",
-            "description": "Serveur de production"
+            "url": "https://9c8r7bbvybn.preview.infomaniak.website",
+            "description": "Serveur de production Infomaniak"
+        },
+        {
+            "url": "http://localhost:8000",
+            "description": "Serveur de développement local"
+        },
+        {
+            "url": "https://9c8r7bbvybn.preview.infomaniak.website",
+            "description": "Serveur de production Infomaniak"
+        },
+        {
+            "url": "http://localhost:8000",
+            "description": "Serveur de développement local"
+        },
+        {
+            "url": "https://9c8r7bbvybn.preview.infomaniak.website",
+            "description": "Serveur de production Infomaniak"
+        },
+        {
+            "url": "http://localhost:8000",
+            "description": "Serveur de développement local"
+        },
+        {
+            "url": "https://9c8r7bbvybn.preview.infomaniak.website",
+            "description": "Serveur de production Infomaniak"
+        },
+        {
+            "url": "http://localhost:8000",
+            "description": "Serveur de développement local"
+        },
+        {
+            "url": "https://9c8r7bbvybn.preview.infomaniak.website",
+            "description": "Serveur de production Infomaniak"
+        },
+        {
+            "url": "http://localhost:8000",
+            "description": "Serveur de développement local"
+        },
+        {
+            "url": "https://9c8r7bbvybn.preview.infomaniak.website",
+            "description": "Serveur de production Infomaniak"
+        },
+        {
+            "url": "http://localhost:8000",
+            "description": "Serveur de développement local"
+        },
+        {
+            "url": "https://9c8r7bbvybn.preview.infomaniak.website",
+            "description": "Serveur de production Infomaniak"
         }
     ],
     "paths": {
@@ -978,8 +1026,16 @@
                 "responses": {
                     "200": {
                         "description": "✅ Liste des candidats récupérée"
+                    },
+                    "401": {
+                        "description": "❌ Non authentifié"
                     }
-                }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
             },
             "post": {
                 "tags": [
@@ -1057,10 +1113,18 @@
                     "201": {
                         "description": "✅ Candidat créé avec succès"
                     },
+                    "401": {
+                        "description": "❌ Non authentifié"
+                    },
                     "422": {
                         "description": "❌ Erreur de validation"
                     }
-                }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
             }
         },
         "/api/candidats/{id}": {
@@ -2370,6 +2434,12 @@
                 "description": "Token d'accès JWT obtenu via l'authentification",
                 "bearerFormat": "JWT",
                 "scheme": "bearer"
+            },
+            "bearer_token": {
+                "type": "http",
+                "description": "Token d'authentification JWT obtenu via /api/auth/login-direct",
+                "scheme": "bearer",
+                "bearerFormat": "JWT"
             }
         }
     },

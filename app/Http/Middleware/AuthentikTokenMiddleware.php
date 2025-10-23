@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Models\Utilisateur;
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
 
 class AuthentikTokenMiddleware
@@ -27,8 +28,16 @@ class AuthentikTokenMiddleware
         }
 
         try {
-            // Décoder le token personnalisé
-            $payload = json_decode(base64_decode($token), true);
+            // Essayer de décoder comme JWT (3 parties)
+            $parts = explode('.', $token);
+            
+            if (count($parts) === 3) {
+                // Vrai JWT - décoder le payload (partie 2)
+                $payload = json_decode(base64_decode($parts[1]), true);
+            } else {
+                // Token base64 simple - décoder directement
+                $payload = json_decode(base64_decode($token), true);
+            }
 
             if (!$payload || !isset($payload['user_id'])) {
                 return response()->json([
@@ -46,8 +55,8 @@ class AuthentikTokenMiddleware
                 ], 401);
             }
 
-            // Récupérer l'utilisateur
-            $user = Utilisateur::with('personne')->find($payload['user_id']);
+            // Récupérer l'utilisateur par email (car l'ID Authentik est différent de l'ID local)
+            $user = Utilisateur::with('personne')->where('email', $payload['email'])->first();
 
             if (!$user) {
                 return response()->json([

@@ -21,6 +21,16 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
+ * @OA\Server(
+ *     url="http://localhost:8000",
+ *     description="Serveur de développement local"
+ * )
+ * 
+ * @OA\Server(
+ *     url="https://9c8r7bbvybn.preview.infomaniak.website",
+ *     description="Serveur de production Infomaniak"
+ * )
+ * 
  * @OA\Tag(
  *     name="👨‍🎓 Candidats",
  *     description="Gestion des candidats au permis de conduire"
@@ -35,6 +45,7 @@ class CandidatController extends Controller
      *     tags={"👨‍🎓 Candidats"},
      *     summary="📋 Liste de tous les candidats",
      *     description="Récupère la liste paginée de tous les candidats avec leurs informations personnelles",
+     *     security={{"BearerAuth":{}}},
      *     @OA\Parameter(
      *         name="page",
      *         in="query",
@@ -52,7 +63,8 @@ class CandidatController extends Controller
      *     @OA\Response(
      *         response=200,
      *         description="✅ Liste des candidats récupérée"
-     *     )
+     *     ),
+     *     @OA\Response(response=401, description="❌ Non authentifié")
      * )
      */
     public function index(Request $request): AnonymousResourceCollection
@@ -73,6 +85,7 @@ class CandidatController extends Controller
      *     tags={"👨‍🎓 Candidats"},
      *     summary="➕ Créer un nouveau candidat",
      *     description="Crée un nouveau candidat avec ses informations personnelles",
+     *     security={{"BearerAuth":{}}},
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
@@ -92,6 +105,7 @@ class CandidatController extends Controller
      *         response=201,
      *         description="✅ Candidat créé avec succès"
      *     ),
+     *     @OA\Response(response=401, description="❌ Non authentifié"),
      *     @OA\Response(response=422, description="❌ Erreur de validation")
      * )
      */

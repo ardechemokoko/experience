@@ -48,24 +48,23 @@ Route::prefix('auth')->group(function () {
         ->name('auth.logout');
 });
 
-// Routes publiques (lecture seule - pas d'authentification)
-Route::get('/candidats', [CandidatController::class, 'index']);
-Route::get('/candidats/{candidat}', [CandidatController::class, 'show']);
-Route::get('/auto-ecoles', [AutoEcoleController::class, 'index']);
-Route::get('/auto-ecoles/{auto_ecole}', [AutoEcoleController::class, 'show']);
-Route::get('/auto-ecoles/{auto_ecole}/formations', [AutoEcoleController::class, 'formations'])->name('auto-ecoles.formations');
-Route::get('/formations', [FormationAutoEcoleController::class, 'index']);
-Route::get('/formations/{formation}', [FormationAutoEcoleController::class, 'show']);
-Route::get('/formations/{formation}/documents-requis', [FormationAutoEcoleController::class, 'documentsRequis'])->name('formations.documents-requis');
-Route::get('/dossiers', [DossierController::class, 'index']);
-Route::get('/dossiers/{dossier}', [DossierController::class, 'show']);
-Route::get('/documents', [DocumentController::class, 'index']);
-Route::get('/documents/{document}', [DocumentController::class, 'show']);
-Route::get('/referentiels', [ReferentielController::class, 'index']);
-Route::get('/referentiels/{referentiel}', [ReferentielController::class, 'show']);
-
 // Routes protégées (Authentification requise - tous les utilisateurs authentifiés)
 Route::middleware(['auth.token'])->group(function () {
+    // Routes de lecture (GET) - maintenant protégées
+    Route::get('/candidats', [CandidatController::class, 'index']);
+    Route::get('/candidats/{candidat}', [CandidatController::class, 'show']);
+    Route::get('/auto-ecoles', [AutoEcoleController::class, 'index']);
+    Route::get('/auto-ecoles/{auto_ecole}', [AutoEcoleController::class, 'show']);
+    Route::get('/auto-ecoles/{auto_ecole}/formations', [AutoEcoleController::class, 'formations'])->name('auto-ecoles.formations');
+    Route::get('/formations', [FormationAutoEcoleController::class, 'index']);
+    Route::get('/formations/{formation}', [FormationAutoEcoleController::class, 'show']);
+    Route::get('/formations/{formation}/documents-requis', [FormationAutoEcoleController::class, 'documentsRequis'])->name('formations.documents-requis');
+    Route::get('/dossiers', [DossierController::class, 'index']);
+    Route::get('/dossiers/{dossier}', [DossierController::class, 'show']);
+    Route::get('/documents', [DocumentController::class, 'index']);
+    Route::get('/documents/{document}', [DocumentController::class, 'show']);
+    Route::get('/referentiels', [ReferentielController::class, 'index']);
+    Route::get('/referentiels/{referentiel}', [ReferentielController::class, 'show']);
     // Candidats
     Route::post('/candidats/complete-profile', [CandidatController::class, 'completeProfile'])->name('candidats.complete-profile');
     Route::post('/candidats/inscription-formation', [CandidatController::class, 'inscriptionFormation'])->name('candidats.inscription-formation');
