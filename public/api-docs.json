@@ -1,0 +1,605 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "🚗 Auto-École API - Authentification Authentik",
+        "description": "API complète pour la gestion de l'authentification avec Authentik comme IAM central. Cette API permet l'inscription, la connexion, la gestion des utilisateurs et des tokens avec un système de contournement du Password Grant Flow.",
+        "contact": {
+            "name": "Support Auto-École API",
+            "url": "https://auto-ecole-api.com",
+            "email": "support@auto-ecole-api.com"
+        },
+        "license": {
+            "name": "MIT",
+            "url": "https://opensource.org/licenses/MIT"
+        },
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "http://localhost:8000",
+            "description": "Serveur de développement local"
+        },
+        {
+            "url": "https://api.auto-ecole.com",
+            "description": "Serveur de production"
+        }
+    ],
+    "paths": {
+        "/api/auth/register": {
+            "post": {
+                "tags": [
+                    "🔐 Authentification"
+                ],
+                "summary": "📝 Inscription d'un nouvel utilisateur",
+                "description": "Crée un nouvel utilisateur dans Authentik et dans la base de données locale. Retourne l'URL d'authentification pour que l'utilisateur puisse se connecter.",
+                "operationId": "registerUser",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "email",
+                                    "password",
+                                    "password_confirmation",
+                                    "nom",
+                                    "prenom",
+                                    "contact",
+                                    "role"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "jean.dupont@example.com"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "Password123!"
+                                    },
+                                    "password_confirmation": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "Password123!"
+                                    },
+                                    "nom": {
+                                        "type": "string",
+                                        "example": "Dupont"
+                                    },
+                                    "prenom": {
+                                        "type": "string",
+                                        "example": "Jean"
+                                    },
+                                    "contact": {
+                                        "type": "string",
+                                        "example": "0612345678"
+                                    },
+                                    "adresse": {
+                                        "type": "string",
+                                        "example": "123 Rue de la Paix, Paris",
+                                        "nullable": true
+                                    },
+                                    "role": {
+                                        "type": "string",
+                                        "enum": [
+                                            "candidat",
+                                            "responsable_auto_ecole",
+                                            "admin"
+                                        ],
+                                        "example": "candidat"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "✅ Inscription réussie",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Inscription réussie. Redirigez l'utilisateur vers Authentik pour se connecter."
+                                        },
+                                        "user": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "string",
+                                                    "example": "019a0e63-a1cd-7012-9586-57868bb66c6f"
+                                                },
+                                                "email": {
+                                                    "type": "string",
+                                                    "example": "jean.dupont@example.com"
+                                                },
+                                                "role": {
+                                                    "type": "string",
+                                                    "example": "candidat"
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "auth_url": {
+                                            "type": "string",
+                                            "example": "http://5.189.156.115:31015/application/o/authorize/?client_id=..."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "❌ Erreur de validation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Les données fournies ne sont pas valides."
+                                        },
+                                        "errors": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "❌ Erreur serveur"
+                    }
+                }
+            }
+        },
+        "/api/auth/login-direct": {
+            "post": {
+                "tags": [
+                    "🔐 Authentification"
+                ],
+                "summary": "🚀 Connexion directe (Contournement Password Grant)",
+                "description": "Authentifie un utilisateur directement via l'API Authentik en contournant le problème du Password Grant Flow. Cette méthode utilise l'API Authentik directement pour vérifier les identifiants et génère des tokens personnalisés.",
+                "operationId": "loginDirect",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "email",
+                                    "password"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "jean.dupont@example.com"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "Password123!"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "✅ Connexion réussie",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Connexion réussie !"
+                                        },
+                                        "user": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "string",
+                                                    "example": "019a0e34-d153-7330-8cb6-80b14fd8811c"
+                                                },
+                                                "email": {
+                                                    "type": "string",
+                                                    "example": "jean.dupont@example.com"
+                                                },
+                                                "role": {
+                                                    "type": "string",
+                                                    "example": "candidat"
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "access_token": {
+                                            "type": "string",
+                                            "example": "eyJ1c2VyX2lkIjoyOCwiZW1haWwiOi..."
+                                        },
+                                        "refresh_token": {
+                                            "type": "string",
+                                            "example": "eyJ1c2VyX2lkIjoyOCwidHlwZSI6In..."
+                                        },
+                                        "token_type": {
+                                            "type": "string",
+                                            "example": "Bearer"
+                                        },
+                                        "expires_in": {
+                                            "type": "integer",
+                                            "example": 3600
+                                        },
+                                        "method": {
+                                            "type": "string",
+                                            "example": "direct_auth"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "❌ Identifiants incorrects",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Identifiants incorrects. Veuillez vérifier votre email et mot de passe."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "❌ Erreur de validation"
+                    },
+                    "500": {
+                        "description": "❌ Erreur serveur"
+                    }
+                }
+            }
+        },
+        "/api/auth/auth-url": {
+            "get": {
+                "tags": [
+                    "🔐 Authentification"
+                ],
+                "summary": "🔗 Obtenir l'URL d'authentification",
+                "description": "Génère l'URL d'authentification pour l'Authorization Code Flow avec Authentik. Cette URL doit être utilisée pour rediriger l'utilisateur vers Authentik pour s'authentifier.",
+                "operationId": "getAuthUrl",
+                "responses": {
+                    "200": {
+                        "description": "✅ URL d'authentification générée",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "auth_url": {
+                                            "type": "string",
+                                            "example": "http://5.189.156.115:31015/application/o/authorize/?client_id=..."
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Redirigez l'utilisateur vers cette URL pour s'authentifier."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "❌ Erreur serveur"
+                    }
+                }
+            }
+        },
+        "/api/auth/authentik/redirect": {
+            "get": {
+                "tags": [
+                    "🔐 Authentification"
+                ],
+                "summary": "🔄 Redirection vers Authentik",
+                "description": "Redirige l'utilisateur vers Authentik pour l'authentification OAuth.",
+                "operationId": "redirectToAuthentik",
+                "responses": {
+                    "302": {
+                        "description": "🔄 Redirection vers Authentik"
+                    },
+                    "500": {
+                        "description": "❌ Erreur serveur"
+                    }
+                }
+            }
+        },
+        "/api/auth/authentik/callback": {
+            "get": {
+                "tags": [
+                    "🔐 Authentification"
+                ],
+                "summary": "📞 Callback d'authentification Authentik",
+                "description": "Gère le callback d'authentification après que l'utilisateur s'est connecté sur Authentik.",
+                "operationId": "handleAuthentikCallback",
+                "parameters": [
+                    {
+                        "name": "code",
+                        "in": "query",
+                        "description": "Code d'autorisation fourni par Authentik",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "✅ Authentification réussie",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Authentification réussie."
+                                        },
+                                        "user": {
+                                            "type": "object"
+                                        },
+                                        "access_token": {
+                                            "type": "string"
+                                        },
+                                        "token_type": {
+                                            "type": "string",
+                                            "example": "Bearer"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "❌ Erreur de callback"
+                    },
+                    "500": {
+                        "description": "❌ Erreur serveur"
+                    }
+                }
+            }
+        },
+        "/api/auth/me": {
+            "get": {
+                "tags": [
+                    "👤 Utilisateurs"
+                ],
+                "summary": "👤 Informations de l'utilisateur connecté",
+                "description": "Récupère les informations complètes de l'utilisateur actuellement connecté.",
+                "operationId": "getUserProfile",
+                "responses": {
+                    "200": {
+                        "description": "✅ Informations utilisateur récupérées",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "user": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "❌ Non authentifié"
+                    },
+                    "500": {
+                        "description": "❌ Erreur serveur"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/auth/logout": {
+            "post": {
+                "tags": [
+                    "🔄 Tokens"
+                ],
+                "summary": "🚪 Déconnexion de l'utilisateur",
+                "description": "Déconnecte l'utilisateur en révoquant ses tokens d'accès et de rafraîchissement dans Authentik.",
+                "operationId": "logoutUser",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "refresh_token": {
+                                        "type": "string",
+                                        "example": "eyJ1c2VyX2lkIjoyOCwidHlwZSI6In..."
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "✅ Déconnexion réussie",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Déconnexion réussie. À bientôt !"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "❌ Token manquant"
+                    },
+                    "500": {
+                        "description": "❌ Erreur serveur"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/auth/refresh": {
+            "post": {
+                "tags": [
+                    "🔄 Tokens"
+                ],
+                "summary": "🔄 Rafraîchir le token d'accès",
+                "description": "Renouvelle le token d'accès en utilisant le token de rafraîchissement.",
+                "operationId": "refreshToken",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "refresh_token"
+                                ],
+                                "properties": {
+                                    "refresh_token": {
+                                        "type": "string",
+                                        "example": "eyJ1c2VyX2lkIjoyOCwidHlwZSI6In..."
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "✅ Token rafraîchi avec succès",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Token rafraîchi avec succès."
+                                        },
+                                        "access_token": {
+                                            "type": "string"
+                                        },
+                                        "refresh_token": {
+                                            "type": "string"
+                                        },
+                                        "token_type": {
+                                            "type": "string",
+                                            "example": "Bearer"
+                                        },
+                                        "expires_in": {
+                                            "type": "integer",
+                                            "example": 3600
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "❌ Refresh token manquant"
+                    },
+                    "401": {
+                        "description": "❌ Refresh token invalide"
+                    },
+                    "500": {
+                        "description": "❌ Erreur serveur"
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "securitySchemes": {
+            "BearerAuth": {
+                "type": "http",
+                "description": "Token d'accès JWT obtenu via l'authentification",
+                "bearerFormat": "JWT",
+                "scheme": "bearer"
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "🔐 Authentification",
+            "description": "Endpoints d'authentification avec Authentik"
+        },
+        {
+            "name": "👤 Utilisateurs",
+            "description": "Gestion des utilisateurs et profils"
+        },
+        {
+            "name": "🔄 Tokens",
+            "description": "Gestion des tokens d'accès et de rafraîchissement"
+        }
+    ]
+}
