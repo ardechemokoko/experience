@@ -105,9 +105,23 @@ class AuthController extends Controller
      *             @OA\Property(property="user", type="object",
      *                 @OA\Property(property="id", type="string", example="019a0e63-a1cd-7012-9586-57868bb66c6f"),
      *                 @OA\Property(property="email", type="string", example="jean.dupont@example.com"),
-     *                 @OA\Property(property="role", type="string", example="candidat")
+     *                 @OA\Property(property="role", type="string", example="candidat"),
+     *                 @OA\Property(property="created_at", type="string", format="date-time", example="2025-10-23T00:00:00+00:00"),
+     *                 @OA\Property(property="personne", type="object",
+     *                     @OA\Property(property="id", type="string", example="019a0e63-a1cd-7012-9586-57868bb66c6f"),
+     *                     @OA\Property(property="nom", type="string", example="Dupont"),
+     *                     @OA\Property(property="prenom", type="string", example="Jean"),
+     *                     @OA\Property(property="nom_complet", type="string", example="Jean Dupont"),
+     *                     @OA\Property(property="email", type="string", example="jean.dupont@example.com"),
+     *                     @OA\Property(property="contact", type="string", example="0612345678"),
+     *                     @OA\Property(property="adresse", type="string", example="123 Rue de la Paix, Paris")
+     *                 )
      *             ),
-     *             @OA\Property(property="auth_url", type="string", example="http://5.189.156.115:31015/application/o/authorize/?client_id=...")
+     *             @OA\Property(property="auth_url", type="string", example="http://5.189.156.115:31015/application/o/authorize/?client_id=..."),
+     *             @OA\Property(property="authentik", type="object",
+     *                 @OA\Property(property="user_id", type="integer", example=28),
+     *                 @OA\Property(property="username", type="string", example="jean.dupont@example.com")
+     *             )
      *         )
      *     ),
      *     @OA\Response(
@@ -167,6 +181,9 @@ class AuthController extends Controller
                 ->redirect()
                 ->getTargetUrl();
 
+            // Recharger l'utilisateur avec ses relations
+            $user->load('personne');
+
             Log::info('Nouvelle inscription réussie (Authentik + DB)', [
                 'user_id' => $user->id,
                 'email' => $user->email,
@@ -181,8 +198,22 @@ class AuthController extends Controller
                     'id' => $user->id,
                     'email' => $user->email,
                     'role' => $user->role,
+                    'created_at' => $user->created_at->toIso8601String(),
+                    'personne' => [
+                        'id' => $user->personne->id,
+                        'nom' => $user->personne->nom,
+                        'prenom' => $user->personne->prenom,
+                        'nom_complet' => $user->personne->prenom . ' ' . $user->personne->nom,
+                        'email' => $user->personne->email,
+                        'contact' => $user->personne->contact,
+                        'adresse' => $user->personne->adresse,
+                    ]
                 ],
                 'auth_url' => $authUrl,
+                'authentik' => [
+                    'user_id' => $authentikUser['pk'],
+                    'username' => $authentikUser['username'],
+                ],
             ], 201);
 
         } catch (Exception $e) {
@@ -226,13 +257,27 @@ class AuthController extends Controller
      *             @OA\Property(property="user", type="object",
      *                 @OA\Property(property="id", type="string", example="019a0e34-d153-7330-8cb6-80b14fd8811c"),
      *                 @OA\Property(property="email", type="string", example="jean.dupont@example.com"),
-     *                 @OA\Property(property="role", type="string", example="candidat")
+     *                 @OA\Property(property="role", type="string", example="candidat"),
+     *                 @OA\Property(property="created_at", type="string", format="date-time", example="2025-10-23T00:00:00+00:00"),
+     *                 @OA\Property(property="personne", type="object",
+     *                     @OA\Property(property="id", type="string", example="019a0e34-d153-7330-8cb6-80b14fd8811c"),
+     *                     @OA\Property(property="nom", type="string", example="Dupont"),
+     *                     @OA\Property(property="prenom", type="string", example="Jean"),
+     *                     @OA\Property(property="nom_complet", type="string", example="Jean Dupont"),
+     *                     @OA\Property(property="email", type="string", example="jean.dupont@example.com"),
+     *                     @OA\Property(property="contact", type="string", example="0612345678"),
+     *                     @OA\Property(property="adresse", type="string", example="123 Rue de la Paix, Paris")
+     *                 )
      *             ),
      *             @OA\Property(property="access_token", type="string", example="eyJ1c2VyX2lkIjoyOCwiZW1haWwiOi..."),
      *             @OA\Property(property="refresh_token", type="string", example="eyJ1c2VyX2lkIjoyOCwidHlwZSI6In..."),
      *             @OA\Property(property="token_type", type="string", example="Bearer"),
      *             @OA\Property(property="expires_in", type="integer", example=3600),
-     *             @OA\Property(property="method", type="string", example="direct_auth")
+     *             @OA\Property(property="method", type="string", example="direct_auth"),
+     *             @OA\Property(property="authentik", type="object",
+     *                 @OA\Property(property="user_id", type="integer", example=28),
+     *                 @OA\Property(property="username", type="string", example="jean.dupont@example.com")
+     *             )
      *         )
      *     ),
      *     @OA\Response(
@@ -262,6 +307,9 @@ class AuthController extends Controller
 
             if ($result['success']) {
                 $user = $this->synchronizeUserFromAuthentik($result['user']);
+                
+                // Recharger l'utilisateur avec ses relations
+                $user->load('personne');
 
                 Log::info('Connexion directe réussie', [
                     'user_id' => $user->id,
@@ -276,12 +324,26 @@ class AuthController extends Controller
                         'id' => $user->id,
                         'email' => $user->email,
                         'role' => $user->role,
+                        'created_at' => $user->created_at->toIso8601String(),
+                        'personne' => [
+                            'id' => $user->personne->id,
+                            'nom' => $user->personne->nom,
+                            'prenom' => $user->personne->prenom,
+                            'nom_complet' => $user->personne->prenom . ' ' . $user->personne->nom,
+                            'email' => $user->personne->email,
+                            'contact' => $user->personne->contact,
+                            'adresse' => $user->personne->adresse,
+                        ]
                     ],
                     'access_token' => $result['tokens']['access_token'],
                     'refresh_token' => $result['tokens']['refresh_token'],
                     'token_type' => $result['tokens']['token_type'],
                     'expires_in' => $result['tokens']['expires_in'],
-                    'method' => 'direct_auth'
+                    'method' => 'direct_auth',
+                    'authentik' => [
+                        'user_id' => $result['user']['pk'],
+                        'username' => $result['user']['username'],
+                    ],
                 ]);
             }
 
