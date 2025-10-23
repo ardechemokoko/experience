@@ -61,6 +61,8 @@ Route::get('/health', function () {
         'status' => 'ok',
         'message' => 'API Auto-École fonctionnelle',
         'timestamp' => now()->toIso8601String(),
+        'version' => '1.0.0',
+        'environment' => config('app.env'),
     ]);
 })->name('api.health');
 

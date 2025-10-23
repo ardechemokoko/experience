@@ -1,0 +1,258 @@
+/* 🎨 Design Original pour Auto-École API Swagger */
+
+:root {
+    --primary-color: #50C786;
+    --secondary-color: #2E7D32;
+    --accent-color: #FF6B35;
+    --background-color: #F8F9FA;
+    --text-color: #2C3E50;
+}
+
+body {
+    background: linear-gradient(135deg, var(--background-color) 0%, #E8F5E8 100%);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* 🎯 Header Swagger */
+.swagger-ui .topbar {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%) !important;
+    box-shadow: 0 4px 20px rgba(80, 199, 134, 0.3);
+}
+
+.swagger-ui .topbar .download-url-wrapper .select-label select {
+    border-color: var(--primary-color);
+}
+
+/* 🎨 Info Section */
+.swagger-ui .info {
+    margin: 2rem 0;
+}
+
+.swagger-ui .info .title {
+    color: var(--primary-color) !important;
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+}
+
+.swagger-ui .info .description {
+    font-size: 1.1rem;
+    color: var(--text-color);
+    line-height: 1.8;
+}
+
+/* 🎯 Authorization Button */
+.swagger-ui .btn.authorize {
+    background: var(--accent-color) !important;
+    border-color: var(--accent-color) !important;
+    color: white !important;
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.swagger-ui .btn.authorize:hover {
+    background: #E55A2B !important;
+    border-color: #E55A2B !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(255, 107, 53, 0.4);
+}
+
+/* 🎯 Operation Blocks */
+.swagger-ui .opblock {
+    border-radius: 12px !important;
+    margin-bottom: 1rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1) !important;
+    transition: all 0.3s ease;
+    border: none !important;
+}
+
+.swagger-ui .opblock:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+}
+
+.swagger-ui .opblock.opblock-post {
+    border-left: 5px solid #28A745 !important;
+}
+
+.swagger-ui .opblock.opblock-get {
+    border-left: 5px solid #17A2B8 !important;
+}
+
+.swagger-ui .opblock-summary {
+    border-radius: 12px 12px 0 0 !important;
+}
+
+.swagger-ui .opblock-summary-description {
+    color: var(--text-color);
+    font-weight: 500;
+}
+
+/* 🎨 Execute Button */
+.swagger-ui .btn.execute {
+    background: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+    color: white !important;
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.swagger-ui .btn.execute:hover {
+    background: var(--secondary-color) !important;
+    border-color: var(--secondary-color) !important;
+    transform: translateY(-1px);
+}
+
+/* 🎯 Tags */
+.swagger-ui .opblock-tag {
+    border-bottom: 3px solid var(--primary-color) !important;
+    margin-bottom: 2rem;
+    padding-bottom: 0.5rem;
+}
+
+.swagger-ui .opblock-tag small {
+    background: var(--primary-color);
+    color: white;
+    padding: 0.3rem 0.8rem;
+    border-radius: 15px;
+    font-weight: 600;
+}
+
+/* 🎨 Responses */
+.swagger-ui .response-col_status {
+    font-weight: 600;
+}
+
+.swagger-ui .responses-inner h4,
+.swagger-ui .responses-inner h5 {
+    color: var(--text-color);
+    font-weight: 600;
+}
+
+/* 🎯 Code Blocks */
+.swagger-ui .highlight-code {
+    background: #F8F9FA;
+    border-radius: 8px;
+    border: 1px solid #E1E8ED;
+}
+
+.swagger-ui .microlight {
+    background: #F8F9FA;
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid #E1E8ED;
+}
+
+/* 🎨 Models */
+.swagger-ui .model-container {
+    background: white;
+    border-radius: 10px;
+    border: 1px solid #E1E8ED;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.swagger-ui .model-title {
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+/* 🎯 Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #F1F1F1;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--primary-color);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--secondary-color);
+}
+
+/* 🎨 Try it out button */
+.swagger-ui .try-out__btn {
+    background: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+    color: white !important;
+    border-radius: 8px;
+}
+
+.swagger-ui .try-out__btn:hover {
+    background: var(--secondary-color) !important;
+    border-color: var(--secondary-color) !important;
+}
+
+/* 🎯 Parameters */
+.swagger-ui .parameters-col_description {
+    color: var(--text-color);
+}
+
+.swagger-ui .parameter__name {
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+/* 🎨 Scheme container */
+.swagger-ui .scheme-container {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    border-radius: 10px;
+    padding: 1rem;
+    margin-bottom: 2rem;
+}
+
+/* 🎯 Links */
+.swagger-ui a {
+    color: var(--primary-color);
+    transition: all 0.3s ease;
+}
+
+.swagger-ui a:hover {
+    color: var(--secondary-color);
+}
+
+/* 🎨 Custom Badge */
+.custom-badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 4px;
+    margin-left: 0.5rem;
+}
+
+.custom-badge-success {
+    background: #28A745;
+    color: white;
+}
+
+.custom-badge-info {
+    background: #17A2B8;
+    color: white;
+}
+
+/* 🎯 Animation */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.swagger-ui .opblock {
+    animation: fadeIn 0.5s ease-out;
+}
+

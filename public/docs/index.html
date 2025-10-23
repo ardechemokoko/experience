@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚗 Auto-École API - Documentation Swagger</title>
+    <link rel="stylesheet" type="text/css" href="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui.css" />
+    <style>
+        /* 🎨 Design Original pour Auto-École API */
+        
+        :root {
+            --primary-color: #50C786;
+            --secondary-color: #2E7D32;
+            --accent-color: #FF6B35;
+            --background-color: #F8F9FA;
+            --text-color: #2C3E50;
+            --border-color: #E1E8ED;
+            --success-color: #28A745;
+            --warning-color: #FFC107;
+            --error-color: #DC3545;
+            --info-color: #17A2B8;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--background-color) 0%, #E8F5E8 100%);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+
+        /* 🎯 Header Personnalisé */
+        .custom-header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            padding: 2rem 0;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(80, 199, 134, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .custom-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="75" r="1" fill="white" opacity="0.1"/><circle cx="50" cy="10" r="0.5" fill="white" opacity="0.1"/><circle cx="10" cy="60" r="0.5" fill="white" opacity="0.1"/><circle cx="90" cy="40" r="0.5" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+            opacity: 0.3;
+        }
+
+        .custom-header h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            position: relative;
+            z-index: 1;
+        }
+
+        .custom-header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            position: relative;
+            z-index: 1;
+        }
+
+        .custom-header .version {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 0.3rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            margin-top: 1rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* 🎨 Container Swagger */
+        .swagger-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            margin-top: -1rem;
+            position: relative;
+            z-index: 2;
+        }
+
+        /* 🎯 Personnalisation Swagger UI */
+        .swagger-ui {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .swagger-ui .topbar {
+            display: none;
+        }
+
+        .swagger-ui .info {
+            margin: 0;
+            padding: 0;
+        }
+
+        .swagger-ui .info .title {
+            color: var(--primary-color);
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .swagger-ui .info .description {
+            font-size: 1.1rem;
+            color: var(--text-color);
+            line-height: 1.8;
+            margin-bottom: 2rem;
+        }
+
+        .swagger-ui .scheme-container {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .swagger-ui .btn.authorize {
+            background: var(--accent-color);
+            border-color: var(--accent-color);
+            color: white;
+            border-radius: 8px;
+            padding: 0.5rem 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .swagger-ui .btn.authorize:hover {
+            background: #E55A2B;
+            border-color: #E55A2B;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(255, 107, 53, 0.4);
+        }
+
+        .swagger-ui .opblock {
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+
+        .swagger-ui .opblock:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+
+        .swagger-ui .opblock.opblock-post {
+            border-color: var(--success-color);
+        }
+
+        .swagger-ui .opblock.opblock-get {
+            border-color: var(--info-color);
+        }
+
+        .swagger-ui .opblock.opblock-put {
+            border-color: var(--warning-color);
+        }
+
+        .swagger-ui .opblock.opblock-delete {
+            border-color: var(--error-color);
+        }
+
+        .swagger-ui .opblock-summary {
+            border-radius: 12px 12px 0 0;
+        }
+
+        .swagger-ui .opblock-summary-description {
+            color: var(--text-color);
+            font-weight: 500;
+        }
+
+        .swagger-ui .opblock-description-wrapper p {
+            color: var(--text-color);
+            font-size: 1rem;
+            line-height: 1.6;
+        }
+
+        .swagger-ui .btn.execute {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+            color: white;
+            border-radius: 8px;
+            padding: 0.5rem 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .swagger-ui .btn.execute:hover {
+            background: var(--secondary-color);
+            border-color: var(--secondary-color);
+            transform: translateY(-1px);
+        }
+
+        .swagger-ui .response-col_status {
+            font-weight: 600;
+        }
+
+        .swagger-ui .response-col_status .response-col_status-200 {
+            color: var(--success-color);
+        }
+
+        .swagger-ui .response-col_status .response-col_status-201 {
+            color: var(--success-color);
+        }
+
+        .swagger-ui .response-col_status .response-col_status-400 {
+            color: var(--error-color);
+        }
+
+        .swagger-ui .response-col_status .response-col_status-401 {
+            color: var(--error-color);
+        }
+
+        .swagger-ui .response-col_status .response-col_status-422 {
+            color: var(--warning-color);
+        }
+
+        .swagger-ui .response-col_status .response-col_status-500 {
+            color: var(--error-color);
+        }
+
+        /* 🎯 Tags Personnalisés */
+        .swagger-ui .opblock-tag {
+            border-bottom: 3px solid var(--primary-color);
+            margin-bottom: 2rem;
+        }
+
+        .swagger-ui .opblock-tag small {
+            background: var(--primary-color);
+            color: white;
+            padding: 0.3rem 0.8rem;
+            border-radius: 15px;
+            font-weight: 600;
+        }
+
+        /* 🎨 Code Blocks */
+        .swagger-ui .highlight-code {
+            background: #F8F9FA;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .swagger-ui .microlight {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            background: #F8F9FA;
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        /* 🎯 Models */
+        .swagger-ui .model-container {
+            background: white;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .swagger-ui .model-title {
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        /* 🎨 Responsive */
+        @media (max-width: 768px) {
+            .custom-header h1 {
+                font-size: 2rem;
+            }
+            
+            .custom-header p {
+                font-size: 1rem;
+            }
+            
+            .swagger-container {
+                padding: 1rem;
+                margin: 1rem;
+            }
+            
+            .swagger-ui .info .title {
+                font-size: 2rem;
+            }
+        }
+
+        /* 🎯 Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .swagger-container {
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        /* 🎨 Scrollbar Personnalisée */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #F1F1F1;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary-color);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--secondary-color);
+        }
+
+        /* 🎯 Footer */
+        .custom-footer {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-color);
+            background: white;
+            margin-top: 2rem;
+        }
+
+        .custom-footer a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .custom-footer a:hover {
+            color: var(--secondary-color);
+            text-decoration: underline;
+        }
+
+        /* 🎨 Badges */
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            border-radius: 4px;
+            margin-left: 0.5rem;
+        }
+
+        .badge-success {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .badge-info {
+            background: var(--info-color);
+            color: white;
+        }
+
+        .badge-warning {
+            background: var(--warning-color);
+            color: #212529;
+        }
+
+        .badge-error {
+            background: var(--error-color);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <!-- 🎯 Header Personnalisé -->
+    <div class="custom-header">
+        <h1>🚗 Auto-École API</h1>
+        <p>Documentation Swagger - Authentification avec Authentik</p>
+        <div class="version">Version 1.0.0</div>
+    </div>
+
+    <!-- 🎨 Container Swagger -->
+    <div class="swagger-container">
+        <div id="swagger-ui"></div>
+    </div>
+
+    <!-- 🎯 Footer -->
+    <div class="custom-footer">
+        <p>🚀 Développé avec ❤️ pour l'Auto-École API</p>
+        <p>🔐 Authentification sécurisée avec <a href="https://goauthentik.io/" target="_blank">Authentik</a></p>
+        <p>📚 Documentation complète disponible dans le <a href="README_AUTHENTIK_COMPLET.md" target="_blank">README</a></p>
+    </div>
+
+    <!-- Scripts Swagger -->
+    <script src="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-bundle.js"></script>
+    <script src="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-standalone-preset.js"></script>
+    <script>
+        // 🎯 Configuration Swagger UI
+        window.onload = function() {
+            const ui = SwaggerUIBundle({
+                url: './swagger_authentik_api.json',
+                dom_id: '#swagger-ui',
+                deepLinking: true,
+                presets: [
+                    SwaggerUIBundle.presets.apis,
+                    SwaggerUIStandalonePreset
+                ],
+                plugins: [
+                    SwaggerUIBundle.plugins.DownloadUrl
+                ],
+                layout: "StandaloneLayout",
+                validatorUrl: null,
+                docExpansion: "list",
+                apisSorter: "alpha",
+                operationsSorter: "alpha",
+                tagsSorter: "alpha",
+                filter: true,
+                showRequestHeaders: true,
+                showCommonExtensions: true,
+                tryItOutEnabled: true,
+                requestInterceptor: function(request) {
+                    // 🎯 Intercepteur pour ajouter des headers personnalisés
+                    console.log('🚀 Requête envoyée:', request);
+                    return request;
+                },
+                responseInterceptor: function(response) {
+                    // 🎯 Intercepteur pour traiter les réponses
+                    console.log('📥 Réponse reçue:', response);
+                    return response;
+                },
+                onComplete: function() {
+                    console.log('✅ Swagger UI chargé avec succès!');
+                    
+                    // 🎯 Ajouter des badges personnalisés
+                    addCustomBadges();
+                    
+                    // 🎯 Ajouter des tooltips
+                    addCustomTooltips();
+                }
+            });
+
+            // 🎯 Fonction pour ajouter des badges personnalisés
+            function addCustomBadges() {
+                // Badge pour la méthode de contournement
+                const loginDirectOp = document.querySelector('[data-path="/api/auth/login-direct"]');
+                if (loginDirectOp) {
+                    const badge = document.createElement('span');
+                    badge.className = 'badge badge-success';
+                    badge.textContent = '🚀 Contournement';
+                    loginDirectOp.querySelector('.opblock-summary').appendChild(badge);
+                }
+
+                // Badge pour les routes protégées
+                const protectedRoutes = document.querySelectorAll('[data-path*="/me"], [data-path*="/logout"]');
+                protectedRoutes.forEach(route => {
+                    const badge = document.createElement('span');
+                    badge.className = 'badge badge-info';
+                    badge.textContent = '🔒 Protégé';
+                    route.querySelector('.opblock-summary').appendChild(badge);
+                });
+            }
+
+            // 🎯 Fonction pour ajouter des tooltips
+            function addCustomTooltips() {
+                const tooltips = [
+                    {
+                        selector: '[data-path="/api/auth/login-direct"]',
+                        title: 'Méthode de Contournement',
+                        content: 'Cette méthode contourne le problème du Password Grant Flow en utilisant directement l\'API Authentik pour l\'authentification.'
+                    },
+                    {
+                        selector: '[data-path="/api/auth/register"]',
+                        title: 'Inscription Complète',
+                        content: 'Crée un utilisateur dans Authentik ET dans la base de données locale, puis retourne l\'URL d\'authentification.'
+                    },
+                    {
+                        selector: '[data-path="/api/auth/me"]',
+                        title: 'Profil Utilisateur',
+                        content: 'Récupère les informations complètes de l\'utilisateur connecté, incluant ses données personnelles.'
+                    }
+                ];
+
+                tooltips.forEach(tooltip => {
+                    const element = document.querySelector(tooltip.selector);
+                    if (element) {
+                        element.title = tooltip.title + ': ' + tooltip.content;
+                    }
+                });
+            }
+        };
+
+        // 🎯 Fonction pour tester l'API
+        function testAPI() {
+            console.log('🧪 Test de l\'API Auto-École');
+            
+            // Test de santé
+            fetch('/api/health')
+                .then(response => response.json())
+                .then(data => {
+                    console.log('❤️ Santé API:', data);
+                })
+                .catch(error => {
+                    console.error('❌ Erreur test santé:', error);
+                });
+        }
+
+        // 🎯 Fonction pour afficher les statistiques
+        function showStats() {
+            const stats = {
+                totalEndpoints: 8,
+                authEndpoints: 5,
+                protectedEndpoints: 3,
+                publicEndpoints: 5,
+                methods: ['GET', 'POST'],
+                features: ['Authentification', 'Autorisation', 'Tokens', 'Profil']
+            };
+            
+            console.log('📊 Statistiques API:', stats);
+            return stats;
+        }
+
+        // 🎯 Initialiser les fonctions globales
+        window.testAPI = testAPI;
+        window.showStats = showStats;
+    </script>
+</body>
+</html>
