@@ -12,7 +12,11 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        // Enregistrer les middlewares personnalisés
+        $middleware->alias([
+            'auth.token' => \App\Http\Middleware\AuthentikTokenMiddleware::class,
+            'role' => \App\Http\Middleware\CheckRoleMiddleware::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
